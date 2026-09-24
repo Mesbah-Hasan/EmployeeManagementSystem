@@ -1,0 +1,16 @@
+﻿@using EmployeeManagement.Shared
+
+<Router AppAssembly="typeof(MauiProgram).Assembly"
+        AdditionalAssemblies="new[] { typeof(AssemblyMarker).Assembly }">
+
+    <Found Context="routeData">
+
+        <RouteView RouteData="routeData"
+                   DefaultLayout="typeof(EmployeeManagement.Shared.Layout.MainLayout)" />
+
+        <FocusOnNavigate RouteData="routeData"
+                         Selector="h1" />
+
+    </Found>
+
+</Router>

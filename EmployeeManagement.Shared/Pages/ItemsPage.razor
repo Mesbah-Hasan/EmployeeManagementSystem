@@ -1,0 +1,78 @@
+﻿@page "/items"
+@inject HttpClient Http
+@using EmployeeManagement.Shared.Models
+@using System.Net.Http.Json
+
+<h3>Items</h3>
+
+@if (errorMessage != null)
+{
+    <p style="color:red;">Error: @errorMessage</p>
+}
+
+<div>
+    <input @bind="newText" placeholder="Enter text" />
+    <button @onclick="AddItem">Add</button>
+</div>
+
+<p>Button clicked: @clickCount times</p>
+
+@if (items == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in items)
+        {
+            <li>@item.Text</li>
+        }
+    </ul>
+}
+
+@code {
+    private List<Item>? items;
+    private string newText = string.Empty;
+    private string? errorMessage;
+    private int clickCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadItems();
+    }
+
+    private async Task LoadItems()
+    {
+        try
+        {
+            items = await Http.GetFromJsonAsync<List<Item>>("api/items");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task AddItem()
+    {
+        clickCount++;
+
+        if (string.IsNullOrWhiteSpace(newText)) return;
+
+        try
+        {
+            var newItem = new Item { Text = newText };
+            var response = await Http.PostAsJsonAsync("api/items", newItem);
+            response.EnsureSuccessStatusCode();
+
+            newText = string.Empty;
+            errorMessage = null;
+            await LoadItems();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

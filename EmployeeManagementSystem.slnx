@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="EmployeeManagement.Api/EmployeeManagement.Api.csproj" Id="114a8342-6d58-4c92-a052-b1a4fbb70631" />
+  <Project Path="EmployeeManagement.Mobile/EmployeeManagement.Mobile.csproj" />
+  <Project Path="EmployeeManagement.Shared/EmployeeManagement.Shared.csproj" />
+  <Project Path="EmployeeManagement.Web/EmployeeManagement.Web.csproj" />
+</Solution>

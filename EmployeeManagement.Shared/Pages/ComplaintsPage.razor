@@ -1,0 +1,274 @@
+﻿@page "/complaints"
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject IPlatformService PlatformService
+@using Microsoft.JSInterop
+@using EmployeeManagement.Shared.Models
+@using System.Net.Http.Json
+@using System.Text
+@using EmployeeManagement.Shared.Services
+
+<h3>অভিযোগ ব্যবস্থাপনা</h3>
+
+@if (errorMessage != null)
+{
+    <p style="color:red;">Error: @errorMessage</p>
+}
+
+<EditForm Model="formModel" OnValidSubmit="SaveComplaint">
+    <table>
+        <tr>
+            <td>তারিখ প্রদান করুন</td>
+            <td><InputDate @bind-Value="formModel.SubmissionDate" /></td>
+        </tr>
+        <tr>
+            <td>অভিযোগকারীর নাম</td>
+            <td><InputText @bind-Value="formModel.ComplainantName" /></td>
+        </tr>
+        <tr>
+            <td>অভিযোগকারীর আইডি</td>
+            <td><InputText @bind-Value="formModel.ComplainantMobile" /></td>
+        </tr>
+        <tr>
+            <td>অভিযোগকারীর পদবী ও বিভাগ</td>
+            <td><InputText @bind-Value="formModel.DesignationDepartment" /></td>
+        </tr>
+        <tr>
+            <td>কোম্পানির নাম</td>
+            <td><InputText @bind-Value="formModel.CompanyName" /></td>
+        </tr>
+        <tr>
+            <td>অভিযোগের বিবরণ</td>
+            <td><InputTextArea @bind-Value="formModel.ComplaintDetails" /></td>
+        </tr>
+        <tr>
+            <td>গৃহীত ব্যবস্থা</td>
+            <td><InputTextArea @bind-Value="formModel.ActionTaken" /></td>
+        </tr>
+        <tr>
+            <td>অবস্থা</td>
+            <td>
+                <InputSelect @bind-Value="formModel.Status">
+                    <option value="">-- নির্বাচন করুন --</option>
+                    <option value="মুলতবি">মুলতবি</option>
+                    <option value="প্রক্রিয়াধীন">প্রক্রিয়াধীন</option>
+                    <option value="নিষ্পন্ন">নিষ্পন্ন</option>
+                </InputSelect>
+            </td>
+        </tr>
+        <tr>
+            <td>নিষ্পত্তিকারী কর্মকর্তা</td>
+            <td><InputText @bind-Value="formModel.ResolvingOfficer" /></td>
+        </tr>
+        <tr>
+            <td>মন্তব্য</td>
+            <td><InputText @bind-Value="formModel.Comments" /></td>
+        </tr>
+    </table>
+
+    <button type="submit">@(isEditing ? "Update" : "Submit")</button>
+    @if (isEditing)
+    {
+        <button type="button" @onclick="CancelEdit">Cancel</button>
+    }
+</EditForm>
+
+<hr />
+
+@if (PlatformService.IsWeb)
+{
+    <button @onclick="ExportToCsv">CSV Export</button>
+}
+
+<br />
+<br />
+
+@if (complaints == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div style="overflow-x:auto; width:100%; border:1px solid #ccc;">
+        <table border="1" cellpadding="5" style="border-collapse:collapse; white-space:nowrap;">
+            <thead>
+                <tr>
+                    <th>তারিখ</th>
+                    <th>নাম</th>
+                    <th>আইডি</th>
+                    <th>পদবী ও বিভাগ</th>
+                    <th>কোম্পানি</th>
+                    <th>বিবরণ</th>
+                    <th>গৃহীত ব্যবস্থা</th>
+                    <th>অবস্থা</th>
+                    <th>নিষ্পত্তিকারী</th>
+                    <th>মন্তব্য</th>
+                    <th>একশন</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in complaints)
+                {
+                    <tr>
+                        <td>@c.SubmissionDate.ToString("dd/MM/yyyy")</td>
+                        <td style="white-space:normal; max-width:150px;">@c.ComplainantName</td>
+                        <td>@c.ComplainantMobile</td>
+                        <td style="white-space:normal; max-width:150px;">@c.DesignationDepartment</td>
+                        <td style="white-space:normal; max-width:150px;">@c.CompanyName</td>
+                        <td style="white-space:normal; max-width:250px;">@c.ComplaintDetails</td>
+                        <td style="white-space:normal; max-width:250px;">@c.ActionTaken</td>
+                        <td>@c.Status</td>
+                        <td style="white-space:normal; max-width:150px;">@c.ResolvingOfficer</td>
+                        <td style="white-space:normal; max-width:150px;">@c.Comments</td>
+                        <td style="white-space:nowrap;">
+                            <button @onclick="() => EditComplaint(c)">Edit</button>
+                            <button @onclick="() => DeleteComplaint(c.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<Complaint>? complaints;
+    private Complaint formModel = new() { SubmissionDate = DateTime.Today };
+    private string? errorMessage;
+    private bool isEditing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComplaints();
+    }
+
+    private async Task LoadComplaints()
+    {
+        try
+        {
+            complaints = await Http.GetFromJsonAsync<List<Complaint>>("api/complaints");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task SaveComplaint()
+    {
+        try
+        {
+            HttpResponseMessage response;
+
+            if (isEditing)
+            {
+                response = await Http.PutAsJsonAsync($"api/complaints/{formModel.Id}", formModel);
+            }
+            else
+            {
+                response = await Http.PostAsJsonAsync("api/complaints", formModel);
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            ResetForm();
+            errorMessage = null;
+            await LoadComplaints();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void EditComplaint(Complaint c)
+    {
+        formModel = new Complaint
+        {
+            Id = c.Id,
+            SubmissionDate = c.SubmissionDate,
+            ComplainantName = c.ComplainantName,
+            ComplainantMobile = c.ComplainantMobile,
+            DesignationDepartment = c.DesignationDepartment,
+            CompanyName = c.CompanyName,
+            ComplaintDetails = c.ComplaintDetails,
+            ActionTaken = c.ActionTaken,
+            Status = c.Status,
+            ResolvingOfficer = c.ResolvingOfficer,
+            Comments = c.Comments
+        };
+        isEditing = true;
+    }
+
+    private async Task DeleteComplaint(int id)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/complaints/{id}");
+            response.EnsureSuccessStatusCode();
+
+            await LoadComplaints();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private void CancelEdit()
+    {
+        ResetForm();
+    }
+
+    private void ResetForm()
+    {
+        formModel = new Complaint { SubmissionDate = DateTime.Today };
+        isEditing = false;
+    }
+
+    private async Task ExportToCsv()
+    {
+        if (complaints == null || complaints.Count == 0)
+        {
+            errorMessage = "No data to export.";
+            return;
+        }
+
+        var sb = new StringBuilder();
+
+        // Header row
+        sb.AppendLine("তারিখ,নাম,আইডি,পদবী ও বিভাগ,কোম্পানি,বিবরণ,গৃহীত ব্যবস্থা,অবস্থা,নিষ্পত্তিকারী,মন্তব্য");
+
+        foreach (var c in complaints)
+        {
+            sb.AppendLine(string.Join(",",
+                Csv(c.SubmissionDate.ToString("dd/MM/yyyy")),
+                Csv(c.ComplainantName),
+                Csv(c.ComplainantMobile),
+                Csv(c.DesignationDepartment),
+                Csv(c.CompanyName),
+                Csv(c.ComplaintDetails),
+                Csv(c.ActionTaken),
+                Csv(c.Status),
+                Csv(c.ResolvingOfficer),
+                Csv(c.Comments)
+            ));
+        }
+
+        // UTF-8 BOM so Excel shows Bengali text correctly instead of garbled characters
+        var csvContent = "\uFEFF" + sb.ToString();
+
+        await JS.InvokeVoidAsync("downloadFile", "complaints.csv", "text/csv", csvContent);
+    }
+
+    private string Csv(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        // Escape values containing comma, quote, or newline
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+        {
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+}
