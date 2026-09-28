@@ -1,0 +1,63 @@
+﻿@page "/register"
+@layout EmployeeManagement.Shared.Layout.BlankLayout
+@inject HttpClient Http
+@using EmployeeManagement.Shared.Models
+@using System.Net.Http.Json
+
+<h3>নতুন রেজিস্ট্রেশন</h3>
+
+@if (message != null)
+{
+    <p style="color:@(isSuccess ? "green" : "red");">@message</p>
+}
+
+<EditForm Model="newUser" OnValidSubmit="HandleRegister">
+    <table>
+        <tr>
+            <td>পূর্ণ নাম</td>
+            <td><InputText @bind-Value="newUser.FullName" /></td>
+        </tr>
+        <tr>
+            <td>ইউজারনেম</td>
+            <td><InputText @bind-Value="newUser.Username" /></td>
+        </tr>
+        <tr>
+            <td>পাসওয়ার্ড</td>
+            <td><InputText type="password" @bind-Value="newUser.Password" /></td>
+        </tr>
+    </table>
+    <button type="submit">Register</button>
+</EditForm>
+
+<p>আগে থেকে অ্যাকাউন্ট আছে? <a href="/login">Login?</a></p>
+
+@code {
+    private User newUser = new();
+    private string? message;
+    private bool isSuccess;
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/users/register", newUser);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isSuccess = true;
+                message = "রেজিস্ট্রেশন সফল হয়েছে। Admin approve করলে লগইন করতে পারবেন।";
+                newUser = new User();
+            }
+            else
+            {
+                isSuccess = false;
+                message = await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            isSuccess = false;
+            message = ex.Message;
+        }
+    }
+}

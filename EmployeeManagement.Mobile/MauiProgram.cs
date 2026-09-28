@@ -24,6 +24,7 @@ namespace EmployeeManagement.Mobile
                 BaseAddress = new Uri("https://localhost:7258/")
             });
             builder.Services.AddScoped<IPlatformService, MobilePlatformService>();
+            builder.Services.AddScoped<AuthState>();
 
 
 #if DEBUG

@@ -1,0 +1,28 @@
+﻿@inject EmployeeManagement.Shared.Services.AuthState Auth
+@inject NavigationManager Nav
+
+@if (shouldRender)
+{
+    <RouteView RouteData="RouteData" DefaultLayout="typeof(EmployeeManagement.Shared.Layout.MainLayout)" />
+}
+
+@code {
+    [Parameter] public RouteData RouteData { get; set; } = default!;
+    private bool shouldRender = false;
+
+    protected override void OnParametersSet()
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).ToLower();
+        bool isPublicPage = path.StartsWith("login") || path.StartsWith("register");
+
+        if (!Auth.IsLoggedIn && !isPublicPage)
+        {
+            shouldRender = false;
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            shouldRender = true;
+        }
+    }
+}

@@ -10,4 +10,5 @@ public class AppDbContext : DbContext
     public DbSet<Item> Items => Set<Item>();
 
     public DbSet<Complaint> Complaints => Set<Complaint>();   // new
+    public DbSet<User> Users => Set<User>();
 }

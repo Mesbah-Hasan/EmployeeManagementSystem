@@ -14,6 +14,7 @@ builder.Services.AddScoped(sp => new HttpClient
 });
 
 builder.Services.AddScoped<IPlatformService, WebPlatformService>();
+builder.Services.AddScoped<AuthState>();
 
 var app = builder.Build();
 
