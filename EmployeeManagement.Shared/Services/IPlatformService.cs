@@ -4,3 +4,4 @@ public interface IPlatformService
 {
     bool IsWeb { get; }
 }
+//comments
